@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="description" content="Sistema de facturación e inventario para empresas colombianas">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./assets/icons/icon-192.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="./css/styles.css">
+    
+    <title>FacturaPRO Colombia</title>
+</head>
+<body>
+    
+    <div id="pantalla-carga" class="pantalla-carga">
+        <div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div>
+        <p>Cargando FacturaPRO...</p>
+    </div>
+
+    <div id="app" class="d-none">
+        
+        <!-- AUTENTICACIÓN -->
+        <section id="seccion-auth" class="container-fluid vh-100 d-flex align-items-center justify-content-center bg-light">
+            <div class="card auth-card">
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-receipt-cutoff display-1"></i>
+                        <h2 class="mt-2">FacturaPRO</h2>
+                        <p class="text-muted mb-0">Sistema de Facturación Colombia</p>
+                    </div>
+                    
+                    <ul class="nav nav-tabs nav-justified mb-4" role="tablist">
+                        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-login">Iniciar Sesión</button></li>
+                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-registro">Crear Cuenta</button></li>
+                    </ul>
+                    
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="tab-login">
+                            <form id="form-login">
+                                <div class="mb-3">
+                                    <label class="form-label">Correo electrónico</label>
+                                    <input type="email" class="form-control" id="login-email" placeholder="empresa@correo.com" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Contraseña</label>
+                                    <input type="password" class="form-control" id="login-password" placeholder="••••••••" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 py-2"><i class="bi bi-box-arrow-in-right me-2"></i>Ingresar</button>
+                            </form>
+                        </div>
+                        
+                        <div class="tab-pane fade" id="tab-registro">
+                            <form id="form-registro">
+                                <div class="mb-3">
+                                    <label class="form-label">Nombre de la empresa</label>
+                                    <input type="text" class="form-control" id="registro-empresa" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">NIT <span class="text-muted">(opcional)</span></label>
+                                    <input type="text" class="form-control" id="registro-nit">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Correo electrónico</label>
+                                    <input type="email" class="form-control" id="registro-email" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Contraseña</label>
+                                    <input type="password" class="form-control" id="registro-password" minlength="6" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Ciudad</label>
+                                    <select class="form-select" id="registro-ciudad" required>
+                                        <option value="">Seleccionar...</option>
+                                        <option value="Bogotá">Bogotá D.C.</option>
+                                        <option value="Medellín">Medellín</option>
+                                        <option value="Cali">Cali</option>
+                                        <option value="Barranquilla">Barranquilla</option>
+                                        <option value="Cartagena">Cartagena</option>
+                                        <option value="Bucaramanga">Bucaramanga</option>
+                                        <option value="Pereira">Pereira</option>
+                                        <option value="Otra">Otra ciudad</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-success w-100 py-2"><i class="bi bi-person-plus me-2"></i>Crear cuenta</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN PRINCIPAL -->
+        <section id="seccion-principal" class="d-none">
+            
+            <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+                <div class="container-fluid">
+                    <button class="btn btn-link text-white d-lg-none me-2 p-0" id="btn-toggle-sidebar"><i class="bi bi-list fs-4"></i></button>
+                    <a class="navbar-brand" href="#"><i class="bi bi-receipt-cutoff me-2"></i>FacturaPRO</a>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="sync-indicator online" id="indicador-conexion"></span>
+                        <span id="nombre-empresa-nav" class="text-white-50 d-none d-md-inline small"></span>
+                        <button class="btn btn-outline-light btn-sm" id="btn-sync" title="Sincronizar"><i class="bi bi-cloud-arrow-up"></i></button>
+                        <button class="btn btn-outline-light btn-sm" id="btn-cerrar-sesion" title="Salir"><i class="bi bi-box-arrow-right"></i></button>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+            <div class="container-fluid">
+                <div class="row">
+                    
+                    <nav class="col-lg-2 sidebar" id="sidebar">
+                        <div class="pt-3">
+                            <ul class="nav flex-column">
+                                <li class="nav-item"><a class="nav-link active" href="#" onclick="App.irASeccion('dashboard')"><i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span></a></li>
+                                <li class="nav-item"><a class="nav-link" href="#" onclick="App.irASeccion('inventario')"><i class="bi bi-box-seam-fill"></i><span>Inventario</span></a></li>
+                                <li class="nav-item"><a class="nav-link" href="#" onclick="App.irASeccion('facturas')"><i class="bi bi-file-earmark-text-fill"></i><span>Facturas</span></a></li>
+                                <li class="nav-item"><a class="nav-link" href="#" onclick="App.irASeccion('contabilidad')"><i class="bi bi-graph-up"></i><span>Contabilidad</span></a></li>
+                                <li class="nav-item"><a class="nav-link" href="#" onclick="App.irASeccion('reportes')"><i class="bi bi-bar-chart-fill"></i><span>Reportes</span></a></li>
+                                <li class="nav-item mt-3 pt-3 border-top"><a class="nav-link" href="#" onclick="App.irASeccion('configuracion')"><i class="bi bi-gear-fill"></i><span>Configuración</span></a></li>
+                            </ul>
+                        </div>
+                    </nav>
+
+                    <main class="col-lg-10 ms-sm-auto main-content">
+                        
+                        <!-- DASHBOARD -->
+                        <div id="vista-dashboard" class="seccion-contenido">
+                            <div class="seccion-header">
+                                <h2><i class="bi bi-grid-1x2 me-2"></i>Dashboard</h2>
+                                <span class="text-muted" id="fecha-actual"></span>
+                            </div>
+                            
+                            <div class="row g-3 mb-4">
+                                <div class="col-6 col-lg-3">
+                                    <div class="card stat-card stat-ventas"><div class="card-body"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value" id="stat-ventas-mes">$0</div><div class="stat-label">Ventas del mes</div></div><div class="stat-icon"><i class="bi bi-cash-stack"></i></div></div></div></div>
+                                </div>
+                                <div class="col-6 col-lg-3">
+                                    <div class="card stat-card stat-facturas"><div class="card-body"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value" id="stat-facturas-mes">0</div><div class="stat-label">Facturas emitidas</div></div><div class="stat-icon"><i class="bi bi-file-earmark-check"></i></div></div></div></div>
+                                </div>
+                                <div class="col-6 col-lg-3">
+                                    <div class="card stat-card stat-productos"><div class="card-body"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value" id="stat-productos">0</div><div class="stat-label">Productos</div></div><div class="stat-icon"><i class="bi bi-box-seam"></i></div></div></div></div>
+                                </div>
+                                <div class="col-6 col-lg-3">
+                                    <div class="card stat-card stat-pendientes"><div class="card-body"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value" id="stat-pendientes">0</div><div class="stat-label">Pagos pendientes</div></div><div class="stat-icon"><i class="bi bi-clock-history"></i></div></div></div></div>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-3 mb-4">
+                                <div class="col-lg-8">
+                                    <div class="card h-100"><div class="card-header"><i class="bi bi-graph-up me-2"></i>Ventas últimos 7 días</div><div class="card-body"><div class="chart-container"><canvas id="grafico-ventas-semana"></canvas></div></div></div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <div class="card h-100"><div class="card-header"><i class="bi bi-pie-chart me-2"></i>Productos más vendidos</div><div class="card-body"><div class="chart-container"><canvas id="grafico-productos-top"></canvas></div></div></div>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-3">
+                                <div class="col-lg-4">
+                                    <div class="card"><div class="card-header"><i class="bi bi-lightning-fill me-2"></i>Acciones rápidas</div><div class="card-body"><div class="d-grid gap-2">
+                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-factura"><i class="bi bi-plus-circle me-2"></i>Nueva Factura</button>
+                                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modal-producto"><i class="bi bi-box-seam me-2"></i>Agregar Producto</button>
+                                        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modal-gasto"><i class="bi bi-cash-stack me-2"></i>Registrar Gasto</button>
+                                    </div></div></div>
+                                </div>
+                                <div class="col-lg-8">
+                                    <div class="card"><div class="card-header d-flex justify-content-between"><span><i class="bi bi-clock-history me-2"></i>Últimas facturas</span><a href="#" class="small" onclick="App.irASeccion('facturas')">Ver todas</a></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Número</th><th>Cliente</th><th>Total</th><th>Estado</th></tr></thead><tbody id="tabla-ultimas-facturas"><tr><td colspan="4" class="text-center text-muted py-4">Sin facturas</td></tr></tbody></table></div></div></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- INVENTARIO -->
+                        <div id="vista-inventario" class="seccion-contenido d-none">
+                            <div class="seccion-header"><h2><i class="bi bi-box-seam me-2"></i>Inventario</h2><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-producto"><i class="bi bi-plus-lg me-2"></i>Nuevo Producto</button></div>
+                            <div class="filtros-container"><div class="row g-2"><div class="col-md-6"><div class="input-group"><span class="input-group-text"><i class="bi bi-search"></i></span><input type="text" class="form-control" id="buscar-producto" placeholder="Buscar..."></div></div><div class="col-md-3"><select class="form-select" id="filtro-categoria"><option value="">Todas las categorías</option></select></div><div class="col-md-3"><select class="form-select" id="filtro-stock"><option value="">Todo el stock</option><option value="bajo">Stock bajo</option><option value="agotado">Agotado</option></select></div></div></div>
+                            <div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover"><thead><tr><th>Imagen</th><th>Código</th><th>Producto</th><th>Precio</th><th>Stock</th><th>Acciones</th></tr></thead><tbody id="tabla-productos"></tbody></table></div></div></div>
+                        </div>
+
+                        <!-- FACTURAS -->
+                        <div id="vista-facturas" class="seccion-contenido d-none">
+                            <div class="seccion-header"><h2><i class="bi bi-file-earmark-text me-2"></i>Facturas</h2><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-factura"><i class="bi bi-plus-lg me-2"></i>Nueva Factura</button></div>
+                            <div class="filtros-container"><div class="row g-2"><div class="col-md-3"><label class="form-label small text-muted">Desde</label><input type="date" class="form-control" id="filtro-fecha-desde"></div><div class="col-md-3"><label class="form-label small text-muted">Hasta</label><input type="date" class="form-control" id="filtro-fecha-hasta"></div><div class="col-md-3"><label class="form-label small text-muted">Estado</label><select class="form-select" id="filtro-estado-factura"><option value="">Todos</option><option value="pendiente">Pendiente</option><option value="pagada">Pagada</option><option value="anulada">Anulada</option></select></div><div class="col-md-3"><label class="form-label small text-muted">&nbsp;</label><button class="btn btn-outline-secondary w-100" onclick="Facturas.limpiarFiltros()"><i class="bi bi-x-lg me-1"></i>Limpiar</button></div></div></div>
+                            <div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover"><thead><tr><th>Número</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tabla-facturas"></tbody></table></div></div></div>
+                        </div>
+
+                        <!-- CONTABILIDAD -->
+                        <div id="vista-contabilidad" class="seccion-contenido d-none">
+                            <div class="seccion-header"><h2><i class="bi bi-graph-up me-2"></i>Contabilidad</h2><button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modal-gasto"><i class="bi bi-plus-lg me-2"></i>Registrar Gasto</button></div>
+                            <div class="filtros-container"><div class="row g-2 align-items-end"><div class="col-md-3"><label class="form-label small text-muted">Mes</label><select class="form-select" id="contabilidad-mes"><option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option><option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option><option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option><option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option></select></div><div class="col-md-2"><label class="form-label small text-muted">Año</label><select class="form-select" id="contabilidad-anio"></select></div><div class="col-md-7 text-md-end"><button class="btn btn-outline-primary me-2" id="btn-generar-reporte"><i class="bi bi-file-pdf me-1"></i>PDF</button><button class="btn btn-outline-success" id="btn-exportar-excel"><i class="bi bi-file-excel me-1"></i>Excel</button></div></div></div>
+                            <div class="row g-3 mb-4"><div class="col-md-4"><div class="card"><div class="card-body resumen-card positivo"><div class="valor" id="resumen-ingresos">$0</div><div class="etiqueta">Total Ingresos</div></div></div></div><div class="col-md-4"><div class="card"><div class="card-body resumen-card negativo"><div class="valor" id="resumen-gastos">$0</div><div class="etiqueta">Total Gastos</div></div></div></div><div class="col-md-4"><div class="card"><div class="card-body resumen-card" id="resumen-utilidad-card"><div class="valor" id="resumen-utilidad">$0</div><div class="etiqueta">Utilidad Neta</div></div></div></div></div>
+                            <div class="card"><div class="card-header"><i class="bi bi-list-ul me-2"></i>Registro de Gastos</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover"><thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Monto</th><th>Acciones</th></tr></thead><tbody id="tabla-gastos"></tbody></table></div></div></div>
+                        </div>
+
+                        <!-- REPORTES -->
+                        <div id="vista-reportes" class="seccion-contenido d-none">
+                            <div class="seccion-header"><h2><i class="bi bi-bar-chart me-2"></i>Reportes</h2></div>
+                            <div class="filtros-container"><div class="row g-2 align-items-end"><div class="col-md-3"><label class="form-label small text-muted">Período</label><select class="form-select" id="reporte-periodo"><option value="7">Últimos 7 días</option><option value="30" selected>Últimos 30 días</option><option value="90">Últimos 3 meses</option><option value="365">Último año</option></select></div><div class="col-md-9 text-md-end"><button class="btn btn-primary" onclick="Reportes.generarReporteCompleto()"><i class="bi bi-arrow-clockwise me-1"></i>Actualizar</button></div></div></div>
+                            <div class="row g-3 mb-4"><div class="col-lg-6"><div class="card h-100"><div class="card-header"><i class="bi bi-graph-up me-2"></i>Evolución de Ventas</div><div class="card-body"><div class="chart-container"><canvas id="grafico-evolucion-ventas"></canvas></div></div></div></div><div class="col-lg-6"><div class="card h-100"><div class="card-header"><i class="bi bi-pie-chart me-2"></i>Gastos por Categoría</div><div class="card-body"><div class="chart-container"><canvas id="grafico-gastos-categoria"></canvas></div></div></div></div></div>
+                            <div class="row g-3"><div class="col-lg-6"><div class="card h-100"><div class="card-header"><i class="bi bi-trophy me-2"></i>Top 10 Productos</div><div class="card-body"><div class="chart-container"><canvas id="grafico-top-productos"></canvas></div></div></div></div><div class="col-lg-6"><div class="card h-100"><div class="card-header"><i class="bi bi-calendar3 me-2"></i>Ingresos vs Gastos</div><div class="card-body"><div class="chart-container"><canvas id="grafico-ingresos-gastos"></canvas></div></div></div></div></div>
+                        </div>
+
+                        <!-- CONFIGURACIÓN -->
+                        <div id="vista-configuracion" class="seccion-contenido d-none">
+                            <div class="seccion-header"><h2><i class="bi bi-gear me-2"></i>Configuración</h2></div>
+                            <div class="row g-4">
+                                <div class="col-lg-6"><div class="card"><div class="card-header"><i class="bi bi-building me-2"></i>Datos de la Empresa</div><div class="card-body"><form id="form-empresa"><div class="mb-3"><label class="form-label">Nombre</label><input type="text" class="form-control" id="config-empresa-nombre"></div><div class="mb-3"><label class="form-label">NIT</label><input type="text" class="form-control" id="config-empresa-nit"></div><div class="mb-3"><label class="form-label">Dirección</label><input type="text" class="form-control" id="config-empresa-direccion"></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Ciudad</label><input type="text" class="form-control" id="config-empresa-ciudad"></div><div class="col-md-6 mb-3"><label class="form-label">Teléfono</label><input type="tel" class="form-control" id="config-empresa-telefono"></div></div><div class="mb-3"><label class="form-label">Logo</label><input type="file" class="form-control" id="config-empresa-logo" accept="image/*"><div id="preview-logo" class="mt-2"></div></div><button type="button" class="btn btn-primary" onclick="App.guardarConfigEmpresa()"><i class="bi bi-save me-2"></i>Guardar</button></form></div></div></div>
+                                <div class="col-lg-6"><div class="card mb-4"><div class="card-header"><i class="bi bi-receipt me-2"></i>Facturación</div><div class="card-body"><form id="form-facturacion"><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Prefijo</label><input type="text" class="form-control" id="config-prefijo" placeholder="FAC"></div><div class="col-md-6 mb-3"><label class="form-label">Número actual</label><input type="number" class="form-control" id="config-numero-actual" min="0"></div></div><div class="mb-3"><label class="form-label">IVA (%)</label><input type="number" class="form-control" id="config-iva" value="19"></div><div class="mb-3"><label class="form-label">Mensaje en facturas</label><textarea class="form-control" id="config-mensaje" rows="2"></textarea></div><button type="button" class="btn btn-primary" onclick="App.guardarConfigFacturacion()"><i class="bi bi-save me-2"></i>Guardar</button></form></div></div><div class="card"><div class="card-header"><i class="bi bi-cloud-download me-2"></i>Respaldo</div><div class="card-body"><div class="d-grid gap-2"><button class="btn btn-outline-primary" onclick="App.descargarBackup()"><i class="bi bi-download me-2"></i>Descargar Backup</button><label class="btn btn-outline-secondary mb-0"><i class="bi bi-upload me-2"></i>Restaurar<input type="file" class="d-none" id="input-restaurar" accept=".json" onchange="App.restaurarBackup(event)"></label><button class="btn btn-outline-success" onclick="App.sincronizarConNube()"><i class="bi bi-cloud-arrow-up me-2"></i>Sincronizar Nube</button></div></div></div></div>
+                            </div>
+                        </div>
+                        
+                    </main>
+                </div>
+            </div>
+
+            <nav class="navbar fixed-bottom nav-mobile d-lg-none">
+                <div class="container-fluid justify-content-around">
+                    <a class="nav-link active" href="#" onclick="App.irASeccion('dashboard')"><i class="bi bi-grid-1x2-fill"></i><span>Inicio</span></a>
+                    <a class="nav-link" href="#" onclick="App.irASeccion('inventario')"><i class="bi bi-box-seam"></i><span>Inventario</span></a>
+                    <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modal-factura"><i class="bi bi-plus-circle-fill"></i><span>Facturar</span></a>
+                    <a class="nav-link" href="#" onclick="App.irASeccion('facturas')"><i class="bi bi-file-earmark-text"></i><span>Facturas</span></a>
+                    <a class="nav-link" href="#" onclick="App.irASeccion('contabilidad')"><i class="bi bi-graph-up"></i><span>Gastos</span></a>
+                </div>
+            </nav>
+        </section>
+    </div>
+
+    <!-- MODALES -->
+    
+    <!-- Modal Producto -->
+    <div class="modal fade" id="modal-producto" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-primary text-white"><h5 class="modal-title"><i class="bi bi-box-seam me-2"></i>Producto</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="form-producto"><input type="hidden" id="producto-id"><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Código</label><input type="text" class="form-control" id="producto-codigo"></div><div class="col-md-6 mb-3"><label class="form-label">Categoría</label><input type="text" class="form-control" id="producto-categoria" list="lista-categorias"><datalist id="lista-categorias"></datalist></div></div><div class="mb-3"><label class="form-label">Nombre *</label><input type="text" class="form-control" id="producto-nombre" required></div><div class="mb-3"><label class="form-label">Descripción</label><textarea class="form-control" id="producto-descripcion" rows="2"></textarea></div><div class="row"><div class="col-md-4 mb-3"><label class="form-label">P. Compra</label><div class="input-group"><span class="input-group-text">$</span><input type="number" class="form-control" id="producto-precio-compra" min="0"></div></div><div class="col-md-4 mb-3"><label class="form-label">P. Venta *</label><div class="input-group"><span class="input-group-text">$</span><input type="number" class="form-control" id="producto-precio-venta" min="0" required></div></div><div class="col-md-4 mb-3"><label class="form-label">Stock</label><input type="number" class="form-control" id="producto-stock" min="0" value="0"></div></div><div class="mb-3"><label class="form-label">Imagen</label><input type="file" class="form-control" id="producto-imagen" accept="image/*"><div id="preview-producto-imagen"></div></div></form></div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" id="btn-guardar-producto"><i class="bi bi-save me-2"></i>Guardar</button></div></div></div></div>
+
+    <!-- Modal Factura -->
+    <div class="modal fade" id="modal-factura" tabindex="-1" aria-labelledby="modal-factura-label" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modal-factura-label">
+                        <i class="bi bi-file-earmark-plus me-2"></i>Nueva Factura
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-factura">
+                        <input type="hidden" id="factura-id">
+                        
+                        <!-- Datos del cliente -->
+                        <div class="card mb-3">
+                            <div class="card-header py-2">
+                                <i class="bi bi-person me-2"></i>Cliente
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Tipo</label>
+                                        <select class="form-select" id="factura-tipo-cliente">
+                                            <option value="no-inscrito">Consumidor final</option>
+                                            <option value="inscrito">Con NIT/CC</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3 d-none" id="grupo-documento-cliente">
+                                        <label class="form-label">NIT/CC</label>
+                                        <input type="text" class="form-control" id="factura-cliente-documento">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Fecha</label>
+                                        <input type="date" class="form-control" id="factura-fecha">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Nombre</label>
+                                        <input type="text" class="form-control" id="factura-cliente-nombre" placeholder="Nombre del cliente">
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">Teléfono</label>
+                                        <input type="tel" class="form-control" id="factura-cliente-telefono">
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">Dirección</label>
+                                        <input type="text" class="form-control" id="factura-cliente-direccion">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Items de la factura -->
+                        <div class="card mb-3">
+                            <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-list-ul me-2"></i>Productos</span>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btn-agregar-item">
+                                    <i class="bi bi-plus-lg me-1"></i>Agregar
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Producto</th>
+                                                <th style="width:80px">Cant.</th>
+                                                <th style="width:120px">Precio</th>
+                                                <th style="width:120px">Subtotal</th>
+                                                <th style="width:50px"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="items-factura">
+                                            <!-- Los items se agregan dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Totales -->
+                        <div class="row justify-content-end">
+                            <div class="col-md-5">
+                                <div class="card bg-light">
+                                    <div class="card-body py-2">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Subtotal:</span>
+                                            <strong id="factura-subtotal">$0</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>IVA (<span id="factura-iva-porcentaje">19</span>%):</span>
+                                            <strong id="factura-iva">$0</strong>
+                                        </div>
+                                        <hr class="my-2">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="fs-5">Total:</span>
+                                            <strong class="fs-5 text-primary" id="factura-total">$0</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Observaciones -->
+                        <div class="mt-3">
+                            <label class="form-label">Observaciones</label>
+                            <textarea class="form-control" id="factura-observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btn-guardar-factura">
+                        <i class="bi bi-save me-2"></i>Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Gasto -->
+    <div class="modal fade" id="modal-gasto" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-danger text-white"><h5 class="modal-title"><i class="bi bi-cash-stack me-2"></i>Registrar Gasto</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="form-gasto"><input type="hidden" id="gasto-id"><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Fecha *</label><input type="date" class="form-control" id="gasto-fecha" required></div><div class="col-md-6 mb-3"><label class="form-label">Categoría *</label><select class="form-select" id="gasto-categoria" required><option value="">Seleccionar...</option><option value="Arriendo">Arriendo</option><option value="Servicios">Servicios</option><option value="Nómina">Nómina</option><option value="Insumos">Insumos</option><option value="Transporte">Transporte</option><option value="Impuestos">Impuestos</option><option value="Mantenimiento">Mantenimiento</option><option value="Marketing">Marketing</option><option value="Otros">Otros</option></select></div></div><div class="mb-3"><label class="form-label">Descripción *</label><input type="text" class="form-control" id="gasto-descripcion" required></div><div class="mb-3"><label class="form-label">Monto *</label><div class="input-group"><span class="input-group-text">$</span><input type="number" class="form-control" id="gasto-monto" min="0" required></div></div></form></div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-danger" id="btn-guardar-gasto"><i class="bi bi-save me-2"></i>Guardar</button></div></div></div></div>
+
+    <!-- Modal Preview Factura -->
+    <div class="modal fade" id="modal-preview-factura" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header bg-success text-white"><h5 class="modal-title"><i class="bi bi-file-earmark-check me-2"></i>Factura Generada</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="preview-factura-contenido" class="border rounded p-3 mb-3 bg-light"></div><div class="card"><div class="card-header py-2"><i class="bi bi-whatsapp me-2"></i>Enviar por WhatsApp</div><div class="card-body"><div class="row"><div class="col-md-5 mb-3 mb-md-0"><label class="form-label small">Número</label><div class="input-group"><span class="input-group-text">+57</span><input type="tel" class="form-control" id="wa-numero" placeholder="3001234567"></div></div><div class="col-md-7"><label class="form-label small">Mensaje</label><textarea class="form-control" id="wa-mensaje" rows="2">Hola, adjunto su factura. ¡Gracias!</textarea></div></div></div></div></div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button><button type="button" class="btn btn-primary" id="btn-descargar-pdf"><i class="bi bi-download me-2"></i>PDF</button><button type="button" class="btn btn-success" id="btn-enviar-wa"><i class="bi bi-whatsapp me-2"></i>WhatsApp</button></div></div></div></div>
+
+    <!-- Toast -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1100"><div id="toast-notificacion" class="toast" role="alert"><div class="toast-header"><i class="bi bi-bell me-2"></i><strong class="me-auto" id="toast-titulo">Notificación</strong><button type="button" class="btn-close" data-bs-dismiss="toast"></button></div><div class="toast-body" id="toast-mensaje"></div></div></div>
+
+    <!-- Banner PWA -->
+    <div id="banner-instalacion" class="d-none position-fixed bottom-0 start-0 end-0 p-3" style="z-index:1090"><div class="alert mb-0 d-flex align-items-center justify-content-between flex-wrap gap-2"><div><i class="bi bi-download me-2"></i><strong>Instala FacturaPRO</strong></div><div><button class="btn btn-primary btn-sm" id="btn-instalar-pwa">Instalar</button><button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="alert"></button></div></div></div>
+
+    <!-- SCRIPTS -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+    <script src="./js/firebase-config.js"></script>
+    <script src="./js/db-local.js"></script>
+    <script src="./js/auth.js"></script>
+    <script src="./js/inventario.js"></script>
+    <script src="./js/facturas.js"></script>
+    <script src="./js/contabilidad.js"></script>
+    <script src="./js/reportes.js"></script>
+    <script src="./js/pdf-generator.js"></script>
+    <script src="./js/app.js"></script>
+
+    <!-- Fix para aria-hidden warning de Bootstrap -->
+    <script>
+        // Solucionar warning de aria-hidden en modales
+        document.addEventListener('DOMContentLoaded', function() {
+            const modales = document.querySelectorAll('.modal');
+            modales.forEach(modal => {
+                modal.addEventListener('shown.bs.modal', function() {
+                    this.removeAttribute('aria-hidden');
+                });
+                modal.addEventListener('hidden.bs.modal', function() {
+                    // No hacer nada, Bootstrap lo maneja
+                });
+            });
+        });
+    </script>
+
+    <!-- ============================================= -->
+    <!-- FIX PARA ERRORES DE CONSOLA -->
+    <!-- ============================================= -->
+    <script>
+    (function() {
+        'use strict';
+        
+        // Fix 1: Aria-hidden en modales Bootstrap
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // Cuando se muestra un modal
+            document.addEventListener('show.bs.modal', function(e) {
+                e.target.removeAttribute('aria-hidden');
+            });
+            
+            // Cuando se empieza a ocultar un modal
+            document.addEventListener('hide.bs.modal', function(e) {
+                // Quitar foco del elemento activo dentro del modal
+                if (e.target.contains(document.activeElement)) {
+                    document.activeElement.blur();
+                }
+            });
+            
+            // Cuando el modal está completamente oculto
+            document.addEventListener('hidden.bs.modal', function(e) {
+                // Doble verificación
+                const modal = e.target;
+                setTimeout(function() {
+                    if (modal.contains(document.activeElement)) {
+                        document.activeElement.blur();
+                    }
+                }, 10);
+            });
+        });
+        
+        // Fix 2: Suprimir warnings específicos en consola (opcional)
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+            const message = args.join(' ');
+            // Ignorar el warning específico de aria-hidden
+            if (message.includes('aria-hidden') && message.includes('focusable')) {
+                return;
+            }
+            originalWarn.apply(console, args);
+        };
+        
+    })();
+    </script>
+</body>
+</html>
+</body>
+</html>
