@@ -1,14 +1,10 @@
 // =====================================================
-// MÓDULO DE INVENTARIO
-// Gestión de productos con fotos
+// MÓDULO DE INVENTARIO (CORREGIDO PARA IMÁGENES)
 // =====================================================
 
 const Inventario = {
     
-    // Lista de productos en memoria
     productos: [],
-    
-    // Producto en edición
     productoActual: null,
     
     // -------------------------------------------------
@@ -29,19 +25,13 @@ const Inventario = {
         
         if (navigator.onLine && uid) {
             try {
-                // Cargar desde Firebase
                 this.productos = await obtenerTodosDocumentos('productos', uid);
-                
-                // Guardar en localStorage para offline
                 DBLocal.guardarColeccion('productos', this.productos);
-                
             } catch (error) {
                 console.error('Error al cargar productos de Firebase:', error);
-                // Cargar desde localStorage si falla
                 this.productos = DBLocal.obtenerProductos();
             }
         } else {
-            // Cargar desde localStorage
             this.productos = DBLocal.obtenerProductos();
         }
         
@@ -52,35 +42,29 @@ const Inventario = {
     // CONFIGURAR EVENTOS
     // -------------------------------------------------
     configurarEventos: function() {
-        // Botón guardar producto
         const btnGuardar = document.getElementById('btn-guardar-producto');
         if (btnGuardar) {
             btnGuardar.addEventListener('click', () => this.guardarProducto());
         }
         
-        // Preview de imagen
         const inputImagen = document.getElementById('producto-imagen');
         if (inputImagen) {
             inputImagen.addEventListener('change', (e) => this.previsualizarImagen(e));
         }
         
-        // Buscador
         const buscador = document.getElementById('buscar-producto');
         if (buscador) {
             buscador.addEventListener('input', (e) => this.buscarProductos(e.target.value));
         }
         
-        // Filtro por categoría
         const filtroCategoria = document.getElementById('filtro-categoria');
         if (filtroCategoria) {
             filtroCategoria.addEventListener('change', (e) => this.filtrarPorCategoria(e.target.value));
         }
         
-        // Limpiar formulario al abrir modal
         const modalProducto = document.getElementById('modal-producto');
         if (modalProducto) {
             modalProducto.addEventListener('show.bs.modal', (e) => {
-                // Si es nuevo producto, limpiar formulario
                 if (!e.relatedTarget || !e.relatedTarget.dataset.productoId) {
                     this.limpiarFormulario();
                 }
@@ -109,47 +93,45 @@ const Inventario = {
             return;
         }
         
-tbody.innerHTML = productos.map(producto => `
-    <tr>
-        <td>
-            ${producto.imagen 
-                ? `<img src="${producto.imagen}" class="producto-imagen" alt="${producto.nombre}">`
-                : `<div class="producto-imagen-placeholder"><i class="bi bi-image"></i></div>`
-            }
-        </td>
-        <td><code>${producto.codigo || '-'}</code></td>
-        <td>
-            <strong>${producto.nombre}</strong>
-            ${producto.categoria ? `<br><small class="text-muted">${producto.categoria}</small>` : ''}
-        </td>
-        <td>$${this.formatearNumero(producto.precioVenta)}</td>
-        <td>
-            <span class="badge ${producto.stock > 10 ? 'bg-success' : producto.stock > 0 ? 'bg-warning' : 'bg-danger'}">
-                ${producto.stock || 0}
-            </span>
-        </td>
-        <td class="acciones-fila">
-            <button class="btn btn-outline-primary" 
-                    onclick="Inventario.editarProducto('${producto.id}')"
-                    title="Editar producto">
-                <i class="bi bi-pencil-fill"></i>
-            </button>
-            <button class="btn btn-outline-danger" 
-                    onclick="Inventario.confirmarEliminar('${producto.id}')"
-                    title="Eliminar producto">
-                <i class="bi bi-trash-fill"></i>
-            </button>
-        </td>
-    </tr>
-`).join('');
-
+        tbody.innerHTML = productos.map(producto => `
+            <tr>
+                <td>
+                    ${producto.imagen 
+                        ? `<img src="${producto.imagen}" class="producto-imagen" alt="${producto.nombre}">`
+                        : `<div class="producto-imagen-placeholder"><i class="bi bi-image"></i></div>`
+                    }
+                </td>
+                <td><code>${producto.codigo || '-'}</code></td>
+                <td>
+                    <strong>${producto.nombre}</strong>
+                    ${producto.categoria ? `<br><small class="text-muted">${producto.categoria}</small>` : ''}
+                </td>
+                <td>$${this.formatearNumero(producto.precioVenta)}</td>
+                <td>
+                    <span class="badge ${producto.stock > 10 ? 'bg-success' : producto.stock > 0 ? 'bg-warning' : 'bg-danger'}">
+                        ${producto.stock || 0}
+                    </span>
+                </td>
+                <td class="acciones-fila">
+                    <button class="btn btn-outline-primary" 
+                            onclick="Inventario.editarProducto('${producto.id}')"
+                            title="Editar producto">
+                        <i class="bi bi-pencil-fill"></i>
+                    </button>
+                    <button class="btn btn-outline-danger" 
+                            onclick="Inventario.confirmarEliminar('${producto.id}')"
+                            title="Eliminar producto">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
     },
     
     // -------------------------------------------------
-    // GUARDAR PRODUCTO
+    // GUARDAR PRODUCTO (CORREGIDO PARA IMÁGENES)
     // -------------------------------------------------
     guardarProducto: async function() {
-        // Obtener datos del formulario
         const id = document.getElementById('producto-id').value;
         const codigo = document.getElementById('producto-codigo').value.trim();
         const nombre = document.getElementById('producto-nombre').value.trim();
@@ -181,7 +163,7 @@ tbody.innerHTML = productos.map(producto => `
             }
         }
         
-        // Preparar datos del producto
+        // Preparar datos del producto (SIN IMAGEN por ahora)
         const producto = {
             codigo: codigo,
             nombre: nombre,
@@ -192,14 +174,24 @@ tbody.innerHTML = productos.map(producto => `
             stock: stock
         };
         
-        // Procesar imagen si se seleccionó una nueva
+        // 🔥 MANEJO DE IMAGEN CORREGIDO
         const inputImagen = document.getElementById('producto-imagen');
         if (inputImagen.files && inputImagen.files[0]) {
-            try {
-                // Convertir a Base64 para almacenamiento local
-                producto.imagen = await archivoABase64(inputImagen.files[0]);
-            } catch (error) {
-                console.error('Error al procesar imagen:', error);
+            const archivo = inputImagen.files[0];
+            
+            // Validar tamaño de imagen (máximo 500KB para Base64)
+            if (archivo.size > 500000) {
+                App.mostrarNotificacion('Advertencia', 'La imagen es muy grande. Por ahora no se guardará. Usa imágenes menores a 500KB.', 'warning');
+                // NO guardar la imagen si es muy grande
+                producto.imagen = null;
+            } else {
+                try {
+                    // Guardar en Base64 solo si es pequeña
+                    producto.imagen = await archivoABase64(archivo);
+                } catch (error) {
+                    console.error('Error al procesar imagen:', error);
+                    producto.imagen = null;
+                }
             }
         } else if (id) {
             // Mantener imagen existente si estamos editando
@@ -222,7 +214,6 @@ tbody.innerHTML = productos.map(producto => `
                 
                 DBLocal.actualizarEnColeccion('productos', id, producto);
                 
-                // Actualizar en memoria
                 const indice = this.productos.findIndex(p => p.id === id);
                 if (indice !== -1) {
                     this.productos[indice] = { ...this.productos[indice], ...producto };
@@ -247,7 +238,6 @@ tbody.innerHTML = productos.map(producto => `
                 App.mostrarNotificacion('Éxito', 'Producto creado correctamente', 'success');
             }
             
-            // Cerrar modal y actualizar vista
             const modal = bootstrap.Modal.getInstance(document.getElementById('modal-producto'));
             modal.hide();
             
@@ -257,7 +247,12 @@ tbody.innerHTML = productos.map(producto => `
             
         } catch (error) {
             console.error('Error al guardar producto:', error);
-            App.mostrarNotificacion('Error', 'No se pudo guardar el producto', 'danger');
+            
+            if (error.message && error.message.includes('longer than')) {
+                App.mostrarNotificacion('Error', 'La imagen es demasiado grande. Usa una imagen más pequeña.', 'danger');
+            } else {
+                App.mostrarNotificacion('Error', 'No se pudo guardar el producto', 'danger');
+            }
         }
     },
     
@@ -272,7 +267,6 @@ tbody.innerHTML = productos.map(producto => `
             return;
         }
         
-        // Llenar formulario
         document.getElementById('producto-id').value = producto.id;
         document.getElementById('producto-codigo').value = producto.codigo || '';
         document.getElementById('producto-nombre').value = producto.nombre || '';
@@ -282,7 +276,6 @@ tbody.innerHTML = productos.map(producto => `
         document.getElementById('producto-precio-venta').value = producto.precioVenta || '';
         document.getElementById('producto-stock').value = producto.stock || 0;
         
-        // Mostrar imagen actual
         const previewContainer = document.getElementById('preview-producto-imagen');
         if (producto.imagen) {
             previewContainer.innerHTML = `<img src="${producto.imagen}" alt="Imagen actual">`;
@@ -290,7 +283,6 @@ tbody.innerHTML = productos.map(producto => `
             previewContainer.innerHTML = '';
         }
         
-        // Abrir modal
         const modal = new bootstrap.Modal(document.getElementById('modal-producto'));
         modal.show();
     },
@@ -320,8 +312,6 @@ tbody.innerHTML = productos.map(producto => `
             }
             
             DBLocal.eliminarProducto(id);
-            
-            // Eliminar de memoria
             this.productos = this.productos.filter(p => p.id !== id);
             
             this.renderizarProductos();
@@ -373,14 +363,12 @@ tbody.innerHTML = productos.map(producto => `
     cargarCategorias: function() {
         const categorias = DBLocal.obtenerCategorias();
         
-        // Actualizar select de filtro
         const selectFiltro = document.getElementById('filtro-categoria');
         if (selectFiltro) {
             selectFiltro.innerHTML = '<option value="">Todas las categorías</option>' +
                 categorias.map(cat => `<option value="${cat}">${cat}</option>`).join('');
         }
         
-        // Actualizar datalist del formulario
         const datalist = document.getElementById('lista-categorias');
         if (datalist) {
             datalist.innerHTML = categorias.map(cat => 
@@ -397,6 +385,11 @@ tbody.innerHTML = productos.map(producto => `
         const previewContainer = document.getElementById('preview-producto-imagen');
         
         if (archivo) {
+            // Validar tamaño
+            if (archivo.size > 500000) {
+                App.mostrarNotificacion('Advertencia', 'La imagen es muy grande (>500KB). Se recomienda usar imágenes más pequeñas.', 'warning');
+            }
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 previewContainer.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
@@ -438,5 +431,4 @@ tbody.innerHTML = productos.map(producto => `
     }
 };
 
-// Hacer disponible globalmente
 window.Inventario = Inventario;

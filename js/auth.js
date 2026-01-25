@@ -1,14 +1,10 @@
 // =====================================================
-// AUTENTICACIÓN - FIREBASE AUTH
-// Manejo de login, registro y sesión de usuarios
+// AUTENTICACIÓN - FIREBASE AUTH (CON SINCRONIZACIÓN)
 // =====================================================
 
 const Auth = {
     
-    // Usuario actual
     usuarioActual: null,
-    
-    // Callback cuando cambia el estado de autenticación
     onAuthStateChanged: null,
     
     // -------------------------------------------------
@@ -19,8 +15,7 @@ const Auth = {
         
         const auth = obtenerAuth();
         
-        // Observar cambios en el estado de autenticación
-        auth.onAuthStateChanged((usuario) => {
+        auth.onAuthStateChanged(async (usuario) => {
             if (usuario) {
                 // Usuario ha iniciado sesión
                 this.usuarioActual = {
@@ -31,19 +26,38 @@ const Auth = {
                     emailVerificado: usuario.emailVerified
                 };
                 
-                // Guardar en localStorage para acceso offline
                 DBLocal.guardarSesion(this.usuarioActual);
                 
-                console.log('Usuario autenticado:', usuario.email);
+                console.log('✅ Usuario autenticado:', usuario.email);
+                
+                // 🔥 SINCRONIZACIÓN AUTOMÁTICA (sin await para no bloquear)
+                if (typeof Sync !== 'undefined') {
+                    // No esperar a que termine la sincronización
+                    Sync.sincronizarAlIniciarSesion(usuario.uid)
+                        .then(() => {
+                            console.log('✅ Sincronización completada');
+                            // Activar escucha en tiempo real DESPUÉS de la sincronización
+                            Sync.escucharCambiosEnTiempoReal(usuario.uid);
+                        })
+                        .catch(err => {
+                            console.error('Error en sincronización:', err);
+                        });
+                }
+                
             } else {
                 // Usuario ha cerrado sesión
                 this.usuarioActual = null;
                 DBLocal.limpiarSesion();
                 
-                console.log('Usuario no autenticado');
+                // Detener sincronización
+                if (typeof Sync !== 'undefined') {
+                    Sync.limpiarAlCerrarSesion();
+                }
+                
+                console.log('👋 Usuario no autenticado');
             }
             
-            // Ejecutar callback
+            // Ejecutar callback DESPUÉS de toda la lógica
             if (this.onAuthStateChanged) {
                 this.onAuthStateChanged(this.usuarioActual);
             }
@@ -57,16 +71,13 @@ const Auth = {
         try {
             const auth = obtenerAuth();
             
-            // Crear usuario en Firebase Auth
             const credencial = await auth.createUserWithEmailAndPassword(email, password);
             const usuario = credencial.user;
             
-            // Actualizar perfil con nombre de empresa
             await usuario.updateProfile({
                 displayName: datosEmpresa.nombre
             });
             
-            // Guardar datos de empresa en Firestore
             await guardarDatosEmpresa(usuario.uid, {
                 nombre: datosEmpresa.nombre,
                 nit: datosEmpresa.nit || '',
@@ -77,7 +88,6 @@ const Auth = {
                 creadoEn: new Date().toISOString()
             });
             
-            // Guardar también en localStorage
             DBLocal.guardarEmpresa({
                 nombre: datosEmpresa.nombre,
                 nit: datosEmpresa.nit || '',
@@ -87,7 +97,6 @@ const Auth = {
                 email: email
             });
             
-            // Configuración inicial de facturación
             const configInicial = {
                 prefijoFactura: 'FAC',
                 numeroFacturaActual: 0,
@@ -127,10 +136,7 @@ const Auth = {
                     break;
             }
             
-            return {
-                exito: false,
-                error: mensaje
-            };
+            return { exito: false, error: mensaje };
         }
     },
     
@@ -144,17 +150,7 @@ const Auth = {
             const credencial = await auth.signInWithEmailAndPassword(email, password);
             const usuario = credencial.user;
             
-            // Cargar datos de empresa desde Firestore
-            const datosEmpresa = await obtenerDatosEmpresa(usuario.uid);
-            if (datosEmpresa) {
-                DBLocal.guardarEmpresa(datosEmpresa);
-            }
-            
-            // Cargar configuración desde Firestore
-            const config = await obtenerDocumento('configuracion', usuario.uid, 'general');
-            if (config) {
-                DBLocal.guardarConfiguracion(config);
-            }
+            // La sincronización automática se ejecuta en onAuthStateChanged
             
             return {
                 exito: true,
@@ -191,10 +187,7 @@ const Auth = {
                     break;
             }
             
-            return {
-                exito: false,
-                error: mensaje
-            };
+            return { exito: false, error: mensaje };
         }
     },
     
@@ -206,17 +199,13 @@ const Auth = {
             const auth = obtenerAuth();
             await auth.signOut();
             
-            // Limpiar datos locales de sesión
             DBLocal.limpiarSesion();
             
             return { exito: true };
             
         } catch (error) {
             console.error('Error al cerrar sesión:', error);
-            return {
-                exito: false,
-                error: 'Error al cerrar sesión'
-            };
+            return { exito: false, error: 'Error al cerrar sesión' };
         }
     },
     
@@ -242,10 +231,7 @@ const Auth = {
                 mensaje = 'No existe una cuenta con este correo';
             }
             
-            return {
-                exito: false,
-                error: mensaje
-            };
+            return { exito: false, error: mensaje };
         }
     },
     
@@ -253,7 +239,6 @@ const Auth = {
     // VERIFICAR SI HAY SESIÓN ACTIVA
     // -------------------------------------------------
     verificarSesion: function() {
-        // Primero verificar en Firebase
         const auth = obtenerAuth();
         const usuario = auth.currentUser;
         
@@ -265,7 +250,6 @@ const Auth = {
             };
         }
         
-        // Si no hay conexión, verificar localStorage
         return DBLocal.obtenerSesion();
     },
     
@@ -293,14 +277,12 @@ const Auth = {
                 throw new Error('No hay usuario autenticado');
             }
             
-            // Actualizar displayName si se proporciona
             if (datos.nombre) {
                 await usuario.updateProfile({
                     displayName: datos.nombre
                 });
             }
             
-            // Actualizar email si se proporciona
             if (datos.email && datos.email !== usuario.email) {
                 await usuario.updateEmail(datos.email);
             }
@@ -309,10 +291,7 @@ const Auth = {
             
         } catch (error) {
             console.error('Error al actualizar perfil:', error);
-            return {
-                exito: false,
-                error: 'Error al actualizar el perfil'
-            };
+            return { exito: false, error: 'Error al actualizar el perfil' };
         }
     },
     
@@ -328,15 +307,12 @@ const Auth = {
                 throw new Error('No hay usuario autenticado');
             }
             
-            // Re-autenticar usuario
             const credencial = firebase.auth.EmailAuthProvider.credential(
                 usuario.email,
                 passwordActual
             );
             
             await usuario.reauthenticateWithCredential(credencial);
-            
-            // Cambiar contraseña
             await usuario.updatePassword(passwordNuevo);
             
             return { exito: true };
@@ -350,13 +326,9 @@ const Auth = {
                 mensaje = 'La contraseña actual es incorrecta';
             }
             
-            return {
-                exito: false,
-                error: mensaje
-            };
+            return { exito: false, error: mensaje };
         }
     }
 };
 
-// Hacer disponible globalmente
 window.Auth = Auth;

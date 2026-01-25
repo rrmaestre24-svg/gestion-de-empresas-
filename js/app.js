@@ -7,7 +7,7 @@ const App = {
     seccionActual: 'dashboard',
     deferredPrompt: null,
     
-    inicializar: async function() {
+inicializar: async function() {
         console.log('🚀 Iniciando FacturaPRO...');
         
         if (typeof inicializarFirebaseSafe === 'function') {
@@ -17,6 +17,12 @@ const App = {
         
         this.registrarServiceWorker();
         this.configurarInstalacionPWA();
+        
+        // 🔥 INICIALIZAR SISTEMA DE SINCRONIZACIÓN
+        if (typeof Sync !== 'undefined') {
+            Sync.inicializar();
+        }
+        
         Auth.inicializar((usuario) => this.manejarCambioAuth(usuario));
         this.configurarEventosGlobales();
         this.configurarMonitorConexion();
@@ -24,7 +30,6 @@ const App = {
         
         setTimeout(() => this.ocultarPantallaCarga(), 800);
     },
-    
     registrarServiceWorker: async function() {
         if ('serviceWorker' in navigator) {
             try {

@@ -4,8 +4,6 @@
 // =====================================================
 
 // Configuración de Firebase - REEMPLAZAR CON TUS CREDENCIALES
-// Obtener estas credenciales desde la consola de Firebase:
-// https://console.firebase.google.com/
 const firebaseConfig = {
     apiKey: "AIzaSyD-H8RzoDeAvJ7FPYSeJqjKmqneSuLvaH4",
     authDomain: "facturapro-colombia.firebaseapp.com",
@@ -23,7 +21,6 @@ let firebaseInicializado = false;
 // =====================================================
 function inicializarFirebase() {
     try {
-        // Verificar si ya está inicializado
         if (!firebaseInicializado) {
             firebase.initializeApp(firebaseConfig);
             firebaseInicializado = true;
@@ -40,45 +37,39 @@ function inicializarFirebase() {
 // OBTENER INSTANCIAS DE SERVICIOS
 // =====================================================
 
-// Obtener instancia de autenticación
 function obtenerAuth() {
     if (!firebaseInicializado) inicializarFirebase();
     return firebase.auth();
 }
 
-// Obtener instancia de Firestore (base de datos)
 function obtenerDB() {
     if (!firebaseInicializado) inicializarFirebase();
     return firebase.firestore();
 }
 
-// Obtener instancia de Storage (almacenamiento de archivos)
 function obtenerStorage() {
     if (!firebaseInicializado) inicializarFirebase();
     return firebase.storage();
 }
 
 // =====================================================
-// CONFIGURACIÓN DE PERSISTENCIA OFFLINE
-// Permite que Firestore funcione sin conexión
+// CONFIGURACIÓN DE PERSISTENCIA OFFLINE - CORREGIDA
 // =====================================================
 async function configurarPersistencia() {
     try {
         const db = obtenerDB();
         
-        // Habilitar persistencia offline
+        // Para Firebase Compat: usar enablePersistence (el método correcto)
         await db.enablePersistence({
-            synchronizeTabs: true // Sincronizar entre pestañas del navegador
+            synchronizeTabs: true
         });
         
         console.log('Persistencia offline habilitada');
         return true;
     } catch (error) {
         if (error.code === 'failed-precondition') {
-            // Múltiples pestañas abiertas, la persistencia solo puede habilitarse en una
             console.warn('Persistencia offline no disponible: múltiples pestañas abiertas');
         } else if (error.code === 'unimplemented') {
-            // El navegador no soporta persistencia
             console.warn('Persistencia offline no soportada en este navegador');
         } else {
             console.error('Error al configurar persistencia:', error);
@@ -91,29 +82,24 @@ async function configurarPersistencia() {
 // FUNCIONES DE BASE DE DATOS FIRESTORE
 // =====================================================
 
-// Referencia a colecciones según el usuario
 function obtenerColeccion(nombreColeccion, uid) {
     const db = obtenerDB();
     return db.collection('usuarios').doc(uid).collection(nombreColeccion);
 }
 
-// Guardar documento en una colección
 async function guardarDocumento(coleccion, uid, datos, idDocumento = null) {
     try {
         const ref = obtenerColeccion(coleccion, uid);
         
-        // Agregar timestamp de creación/actualización
         const datosConFecha = {
             ...datos,
             actualizadoEn: firebase.firestore.FieldValue.serverTimestamp()
         };
         
         if (idDocumento) {
-            // Actualizar documento existente
             await ref.doc(idDocumento).set(datosConFecha, { merge: true });
             return idDocumento;
         } else {
-            // Crear nuevo documento con ID automático
             datosConFecha.creadoEn = firebase.firestore.FieldValue.serverTimestamp();
             const docRef = await ref.add(datosConFecha);
             return docRef.id;
@@ -124,7 +110,6 @@ async function guardarDocumento(coleccion, uid, datos, idDocumento = null) {
     }
 }
 
-// Obtener un documento específico
 async function obtenerDocumento(coleccion, uid, idDocumento) {
     try {
         const ref = obtenerColeccion(coleccion, uid);
@@ -140,7 +125,6 @@ async function obtenerDocumento(coleccion, uid, idDocumento) {
     }
 }
 
-// Obtener todos los documentos de una colección
 async function obtenerTodosDocumentos(coleccion, uid, ordenarPor = 'creadoEn', direccion = 'desc') {
     try {
         const ref = obtenerColeccion(coleccion, uid);
@@ -158,7 +142,6 @@ async function obtenerTodosDocumentos(coleccion, uid, ordenarPor = 'creadoEn', d
     }
 }
 
-// Obtener documentos con filtro
 async function obtenerDocumentosFiltrados(coleccion, uid, campo, operador, valor) {
     try {
         const ref = obtenerColeccion(coleccion, uid);
@@ -176,7 +159,6 @@ async function obtenerDocumentosFiltrados(coleccion, uid, campo, operador, valor
     }
 }
 
-// Eliminar un documento
 async function eliminarDocumento(coleccion, uid, idDocumento) {
     try {
         const ref = obtenerColeccion(coleccion, uid);
@@ -189,21 +171,15 @@ async function eliminarDocumento(coleccion, uid, idDocumento) {
 }
 
 // =====================================================
-// FUNCIONES DE STORAGE (ALMACENAMIENTO DE ARCHIVOS)
+// FUNCIONES DE STORAGE
 // =====================================================
 
-// Subir imagen a Firebase Storage
 async function subirImagen(archivo, ruta) {
     try {
         const storage = obtenerStorage();
         const ref = storage.ref(ruta);
-        
-        // Subir el archivo
         const snapshot = await ref.put(archivo);
-        
-        // Obtener la URL de descarga
         const urlDescarga = await snapshot.ref.getDownloadURL();
-        
         return urlDescarga;
     } catch (error) {
         console.error('Error al subir imagen:', error);
@@ -211,7 +187,6 @@ async function subirImagen(archivo, ruta) {
     }
 }
 
-// Eliminar imagen de Firebase Storage
 async function eliminarImagen(ruta) {
     try {
         const storage = obtenerStorage();
@@ -220,7 +195,6 @@ async function eliminarImagen(ruta) {
         return true;
     } catch (error) {
         console.error('Error al eliminar imagen:', error);
-        // No lanzar error si la imagen no existe
         if (error.code === 'storage/object-not-found') {
             return true;
         }
@@ -228,7 +202,6 @@ async function eliminarImagen(ruta) {
     }
 }
 
-// Convertir archivo a Base64 (para almacenamiento local)
 function archivoABase64(archivo) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -242,7 +215,6 @@ function archivoABase64(archivo) {
 // FUNCIONES DE DATOS DE EMPRESA
 // =====================================================
 
-// Guardar datos de la empresa del usuario
 async function guardarDatosEmpresa(uid, datosEmpresa) {
     try {
         const db = obtenerDB();
@@ -258,7 +230,6 @@ async function guardarDatosEmpresa(uid, datosEmpresa) {
     }
 }
 
-// Obtener datos de la empresa del usuario
 async function obtenerDatosEmpresa(uid) {
     try {
         const db = obtenerDB();
@@ -278,11 +249,9 @@ async function obtenerDatosEmpresa(uid) {
 // ESCUCHAR CAMBIOS EN TIEMPO REAL
 // =====================================================
 
-// Escuchar cambios en una colección (tiempo real)
 function escucharColeccion(coleccion, uid, callback) {
     const ref = obtenerColeccion(coleccion, uid);
     
-    // Retorna función para cancelar la suscripción
     return ref.orderBy('creadoEn', 'desc').onSnapshot(
         (snapshot) => {
             const documentos = [];
@@ -302,12 +271,10 @@ function escucharColeccion(coleccion, uid, callback) {
 // SINCRONIZACIÓN DE DATOS
 // =====================================================
 
-// Verificar estado de conexión
 function verificarConexion() {
     return navigator.onLine;
 }
 
-// Exportar todos los datos del usuario (backup)
 async function exportarDatosUsuario(uid) {
     try {
         const datos = {
@@ -328,20 +295,16 @@ async function exportarDatosUsuario(uid) {
     }
 }
 
-// Importar datos del usuario (restaurar backup)
 async function importarDatosUsuario(uid, datos) {
     try {
-        // Validar estructura de datos
         if (!datos.version) {
             throw new Error('Formato de backup no válido');
         }
         
-        // Importar empresa
         if (datos.empresa) {
             await guardarDatosEmpresa(uid, datos.empresa);
         }
         
-        // Importar productos
         if (datos.productos && Array.isArray(datos.productos)) {
             for (const producto of datos.productos) {
                 const { id, ...datosProducto } = producto;
@@ -349,7 +312,6 @@ async function importarDatosUsuario(uid, datos) {
             }
         }
         
-        // Importar facturas
         if (datos.facturas && Array.isArray(datos.facturas)) {
             for (const factura of datos.facturas) {
                 const { id, ...datosFactura } = factura;
@@ -357,7 +319,6 @@ async function importarDatosUsuario(uid, datos) {
             }
         }
         
-        // Importar gastos
         if (datos.gastos && Array.isArray(datos.gastos)) {
             for (const gasto of datos.gastos) {
                 const { id, ...datosGasto } = gasto;
@@ -365,7 +326,6 @@ async function importarDatosUsuario(uid, datos) {
             }
         }
         
-        // Importar clientes
         if (datos.clientes && Array.isArray(datos.clientes)) {
             for (const cliente of datos.clientes) {
                 const { id, ...datosCliente } = cliente;
@@ -373,7 +333,6 @@ async function importarDatosUsuario(uid, datos) {
             }
         }
         
-        // Importar configuración
         if (datos.configuracion) {
             await guardarDocumento('configuracion', uid, datos.configuracion, 'general');
         }
@@ -385,21 +344,17 @@ async function importarDatosUsuario(uid, datos) {
     }
 }
 
-
 // Función para inicializar Firebase de forma segura
 async function inicializarFirebaseSafe() {
     try {
-        // Verificar que Firebase esté cargado
         if (typeof firebase === 'undefined') {
             console.error('Firebase no está cargado. Verifica los scripts en index.html');
             return false;
         }
         
-        // Inicializar Firebase
         const resultado = inicializarFirebase();
         
         if (resultado) {
-            // Configurar persistencia
             await configurarPersistencia();
             console.log('✅ Firebase listo y configurado');
             return true;
