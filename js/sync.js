@@ -31,9 +31,14 @@ const Sync = {
             this.sincronizarTodo();
         });
         
-        // Sincronizar al cerrar/recargar página
+        // Al cerrar la página, los datos pendientes ya están guardados en
+        // localStorage. Se sincronizarán automáticamente en la próxima
+        // sesión (evento 'online' o al iniciar sesión con conexión).
         window.addEventListener('beforeunload', () => {
-            this.sincronizarPendientes();
+            if (this.intervalSync) {
+                clearInterval(this.intervalSync);
+                this.intervalSync = null;
+            }
         });
     },
     

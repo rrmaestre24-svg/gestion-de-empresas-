@@ -347,7 +347,8 @@ const DBLocal = {
             prefijoFactura: 'FAC',
             numeroFacturaActual: 0,
             iva: 19,
-            mensajeFactura: 'Gracias por su compra'
+            mensajeFactura: 'Gracias por su compra',
+            umbralStockBajo: 10
         };
     },
     
@@ -449,11 +450,26 @@ const DBLocal = {
             }
         }
         
+        // Estimación de espacio total disponible (5MB es el límite típico)
+        const limiteBytes = 5 * 1024 * 1024;
+        const porcentajeUsado = ((total / limiteBytes) * 100).toFixed(1);
+        
         return {
             bytes: total,
             kb: (total / 1024).toFixed(2),
-            mb: (total / (1024 * 1024)).toFixed(2)
+            mb: (total / (1024 * 1024)).toFixed(2),
+            porcentajeUsado: porcentajeUsado,
+            disponible: (limiteBytes - total) > 0
         };
+    },
+    
+    // Verificar si hay espacio disponible
+    verificarEspacioDisponible: function() {
+        const espacio = this.calcularEspacioUsado();
+        if (parseFloat(espacio.porcentajeUsado) > 80) {
+            console.warn('⚠️ localStorage casi lleno:', espacio.porcentajeUsado + '%');
+        }
+        return espacio.disponible;
     },
     
     // Mostrar error de espacio

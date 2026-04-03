@@ -6,8 +6,8 @@ const App = {
     usuarioActual: null,
     seccionActual: 'dashboard',
     deferredPrompt: null,
-    
-inicializar: async function() {
+
+    inicializar: async function() {
         console.log('🚀 Iniciando FacturaPRO...');
         
         if (typeof inicializarFirebaseSafe === 'function') {
@@ -33,7 +33,7 @@ inicializar: async function() {
     registrarServiceWorker: async function() {
         if ('serviceWorker' in navigator) {
             try {
-                const registro = await navigator.serviceWorker.register('./sw.js');
+                const registro = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
                 console.log('✅ Service Worker registrado');
                 registro.addEventListener('updatefound', () => {
                     const nuevoSW = registro.installing;
@@ -285,6 +285,7 @@ inicializar: async function() {
         document.getElementById('config-numero-actual').value = config.numeroFacturaActual || 0;
         document.getElementById('config-iva').value = config.iva || 19;
         document.getElementById('config-mensaje').value = config.mensajeFactura || '';
+        document.getElementById('config-umbral-stock').value = config.umbralStockBajo || 10;
     },
     
     guardarConfigEmpresa: async function() {
@@ -322,7 +323,8 @@ inicializar: async function() {
             prefijoFactura: document.getElementById('config-prefijo').value || 'FAC',
             numeroFacturaActual: parseInt(document.getElementById('config-numero-actual').value) || 0,
             iva: parseInt(document.getElementById('config-iva').value) || 19,
-            mensajeFactura: document.getElementById('config-mensaje').value || ''
+            mensajeFactura: document.getElementById('config-mensaje').value || '',
+            umbralStockBajo: parseInt(document.getElementById('config-umbral-stock').value) || 10
         };
         
         try {

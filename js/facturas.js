@@ -247,7 +247,7 @@ const Facturas = {
         }
     },
     
-// -------------------------------------------------
+    // -------------------------------------------------
     // CALCULAR SUBTOTAL DE FILA
     // -------------------------------------------------
     calcularSubtotalFila: function(input) {
@@ -269,7 +269,7 @@ const Facturas = {
         this.calcularTotalesFactura();
     },
     
-// -------------------------------------------------
+    // -------------------------------------------------
     // ELIMINAR FILA DE ITEM
     // -------------------------------------------------
     eliminarFilaItem: function(btn) {
@@ -685,6 +685,16 @@ const Facturas = {
         }
         
         this.renderizarFacturas(facturasFiltradas);
+    },
+    
+    // -------------------------------------------------
+    // LIMPIAR FILTROS
+    // -------------------------------------------------
+    limpiarFiltros: function() {
+        document.getElementById('filtro-fecha-desde').value = '';
+        document.getElementById('filtro-fecha-hasta').value = '';
+        document.getElementById('filtro-estado-factura').value = '';
+        this.renderizarFacturas();
     },
     
     // -------------------------------------------------

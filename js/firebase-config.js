@@ -366,3 +366,44 @@ async function inicializarFirebaseSafe() {
         return false;
     }
 }
+
+// =====================================================
+// FUNCIONES UTILIDADES GLOBALES
+// =====================================================
+
+function formatearNumero(numero) {
+    return new Intl.NumberFormat('es-CO').format(numero || 0);
+}
+
+function formatearFecha(fecha, formato = 'completo') {
+    if (!fecha) return '-';
+    const date = new Date(fecha);
+    
+    if (formato === 'completo') {
+        return date.toLocaleDateString('es-CO', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+    } else if (formato === 'corto') {
+        return date.toLocaleDateString('es-CO', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        });
+    } else if (formato === 'fecha') {
+        return date.toLocaleDateString('es-CO');
+    } else if (formato === 'input') {
+        return date.toISOString().split('T')[0];
+    }
+    
+    return date.toLocaleDateString('es-CO');
+}
+
+function formatearMoneda(numero) {
+    return '$' + formatearNumero(numero);
+}
+
+function generarIdUnico() {
+    return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}

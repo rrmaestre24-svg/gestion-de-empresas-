@@ -62,6 +62,11 @@ const Inventario = {
             filtroCategoria.addEventListener('change', (e) => this.filtrarPorCategoria(e.target.value));
         }
         
+        const filtroStock = document.getElementById('filtro-stock');
+        if (filtroStock) {
+            filtroStock.addEventListener('change', (e) => this.filtrarPorStock(e.target.value));
+        }
+        
         const modalProducto = document.getElementById('modal-producto');
         if (modalProducto) {
             modalProducto.addEventListener('show.bs.modal', (e) => {
@@ -78,9 +83,9 @@ const Inventario = {
     renderizarProductos: function(productosAMostrar = null) {
         const productos = productosAMostrar || this.productos;
         const tbody = document.getElementById('tabla-productos');
-        
+
         if (!tbody) return;
-        
+
         if (productos.length === 0) {
             tbody.innerHTML = `
                 <tr>
@@ -92,40 +97,47 @@ const Inventario = {
             `;
             return;
         }
-        
-        tbody.innerHTML = productos.map(producto => `
-            <tr>
-                <td>
-                    ${producto.imagen 
-                        ? `<img src="${producto.imagen}" class="producto-imagen" alt="${producto.nombre}">`
-                        : `<div class="producto-imagen-placeholder"><i class="bi bi-image"></i></div>`
-                    }
-                </td>
-                <td><code>${producto.codigo || '-'}</code></td>
-                <td>
-                    <strong>${producto.nombre}</strong>
-                    ${producto.categoria ? `<br><small class="text-muted">${producto.categoria}</small>` : ''}
-                </td>
-                <td>$${this.formatearNumero(producto.precioVenta)}</td>
-                <td>
-                    <span class="badge ${producto.stock > 10 ? 'bg-success' : producto.stock > 0 ? 'bg-warning' : 'bg-danger'}">
-                        ${producto.stock || 0}
-                    </span>
-                </td>
-                <td class="acciones-fila">
-                    <button class="btn btn-outline-primary" 
-                            onclick="Inventario.editarProducto('${producto.id}')"
-                            title="Editar producto">
-                        <i class="bi bi-pencil-fill"></i>
-                    </button>
-                    <button class="btn btn-outline-danger" 
-                            onclick="Inventario.confirmarEliminar('${producto.id}')"
-                            title="Eliminar producto">
-                        <i class="bi bi-trash-fill"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+
+        const umbral = DBLocal.obtenerConfiguracion().umbralStockBajo || 10;
+
+        tbody.innerHTML = productos.map(producto => {
+            const stockClass = producto.stock > umbral ? 'badge-success'
+                             : producto.stock > 0      ? 'badge-warning'
+                             : 'badge-danger';
+            return `
+                <tr>
+                    <td>
+                        ${producto.imagen
+                            ? `<img src="${producto.imagen}" class="producto-imagen" alt="${producto.nombre}">`
+                            : `<div class="producto-imagen-placeholder"><i class="bi bi-image"></i></div>`
+                        }
+                    </td>
+                    <td><code>${producto.codigo || '-'}</code></td>
+                    <td>
+                        <strong>${producto.nombre}</strong>
+                        ${producto.categoria ? `<br><small class="text-muted">${producto.categoria}</small>` : ''}
+                    </td>
+                    <td>$${this.formatearNumero(producto.precioVenta)}</td>
+                    <td>
+                        <span class="badge ${stockClass}">
+                            ${producto.stock || 0}
+                        </span>
+                    </td>
+                    <td class="acciones-fila">
+                        <button class="btn btn-outline-primary"
+                                onclick="Inventario.editarProducto('${producto.id}')"
+                                title="Editar producto">
+                            <i class="bi bi-pencil-fill"></i>
+                        </button>
+                        <button class="btn btn-outline-danger"
+                                onclick="Inventario.confirmarEliminar('${producto.id}')"
+                                title="Eliminar producto">
+                            <i class="bi bi-trash-fill"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     },
     
     // -------------------------------------------------
@@ -341,6 +353,37 @@ const Inventario = {
             (p.categoria && p.categoria.toLowerCase().includes(textoMinusculas))
         );
         
+        this.renderizarProductos(resultados);
+    },
+    
+    // -------------------------------------------------
+    // LIMPIAR FILTROS
+    // -------------------------------------------------
+    limpiarFiltros: function() {
+        document.getElementById('buscar-producto').value = '';
+        document.getElementById('filtro-categoria').value = '';
+        document.getElementById('filtro-stock').value = '';
+        this.renderizarProductos();
+    },
+    
+    // -------------------------------------------------
+    // FILTRAR POR STOCK
+    // -------------------------------------------------
+    filtrarPorStock: function(tipoStock) {
+        if (!tipoStock) {
+            this.renderizarProductos();
+            return;
+        }
+
+        const umbral = DBLocal.obtenerConfiguracion().umbralStockBajo || 10;
+        let resultados = [...this.productos];
+
+        if (tipoStock === 'agotado') {
+            resultados = resultados.filter(p => (p.stock || 0) === 0);
+        } else if (tipoStock === 'bajo') {
+            resultados = resultados.filter(p => (p.stock || 0) > 0 && (p.stock || 0) <= umbral);
+        }
+
         this.renderizarProductos(resultados);
     },
     

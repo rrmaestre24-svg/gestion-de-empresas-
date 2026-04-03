@@ -152,7 +152,7 @@ const Contabilidad = {
                 <td>${this.formatearFecha(gasto.fecha)}</td>
                 <td>${gasto.descripcion}</td>
                 <td>
-                    <span class="badge bg-secondary">${gasto.categoria || 'Sin categoría'}</span>
+                    <span class="badge badge-secondary">${gasto.categoria || 'Sin categoría'}</span>
                 </td>
                 <td class="text-danger">
                     <strong>-$${this.formatearNumero(gasto.monto)}</strong>

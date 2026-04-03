@@ -140,9 +140,12 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; color: var(--color-texto); margin-bot
 
 /* ----- BADGES ----- */
 .badge { padding: 0.4em 0.8em; border-radius: 50px; font-weight: 600; font-size: 0.75rem; letter-spacing: 0.3px; }
-.badge-pagada { background: var(--color-exito-light); color: var(--color-exito); }
-.badge-pendiente { background: var(--color-advertencia-light); color: #c27c0e; }
-.badge-anulada { background: var(--color-peligro-light); color: var(--color-peligro); }
+.badge-pagada, .badge-success { background: var(--color-exito-light); color: var(--color-exito); }
+.badge-pendiente, .badge-warning { background: var(--color-advertencia-light); color: #c27c0e; }
+.badge-anulada, .badge-danger { background: var(--color-peligro-light); color: var(--color-peligro); }
+.badge-default, .badge-secondary { background: var(--color-fondo); color: var(--color-texto-secundario); }
+.badge-primary { background: rgba(44, 62, 80, 0.1); color: var(--color-primario); }
+.badge-info { background: rgba(41, 128, 185, 0.1); color: var(--color-info); }
 
 /* ----- BOTONES ----- */
 .btn { border-radius: var(--radio-md); font-weight: 500; font-size: 0.9rem; padding: 0.625rem 1.25rem; transition: var(--transicion); border: none; }
